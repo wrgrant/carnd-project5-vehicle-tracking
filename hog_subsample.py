@@ -4,13 +4,15 @@ import numpy as np
 import pickle
 import cv2
 from lesson_functions import *
+import detect_multiple
+import myplot
 
 
 
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
-    draw_img = np.copy(img)
+    # draw_img = np.copy(img)
     img = img.astype(np.float32) / 255
 
     img_tosearch = img[ystart:ystop, :, :]
@@ -27,9 +29,12 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     nxblocks = (ch1.shape[1] // pix_per_cell) - 1
     nyblocks = (ch1.shape[0] // pix_per_cell) - 1
     nfeat_per_block = orient * cell_per_block ** 2
+
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = 64
+
     nblocks_per_window = (window // pix_per_cell) - 1
+    # nblocks_per_window = window // pix_per_cell - cell_per_block + 1
     cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
@@ -38,6 +43,8 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+
+    rectangles = []
 
     for xb in range(nxsteps):
         for yb in range(nysteps):
@@ -53,13 +60,15 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
             ytop = ypos * pix_per_cell
 
             # Extract the image patch
-            subimg = cv2.resize(ctrans_tosearch[ytop:ytop + window, xleft:xleft + window], (64, 64))
+            # subimg = cv2.resize(ctrans_tosearch[ytop:ytop + window, xleft:xleft + window], (64, 64))
+            subimg = ctrans_tosearch[ytop:ytop + window, xleft:xleft + window]
 
             # Get color features
-            spatial_features = bin_spatial(subimg, size=spatial_size)
-            hist_features = color_hist(subimg, nbins=hist_bins)
+            # spatial_features = bin_spatial(subimg, size=spatial_size)
+            # hist_features = color_hist(subimg, nbins=hist_bins)
 
-            features = np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1)
+            # features = np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1)
+            features = hog_features
 
             # Scale features and make a prediction
             test_features = X_scaler.transform(features)
@@ -70,10 +79,13 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
-                cv2.rectangle(draw_img, (xbox_left, ytop_draw + ystart),
-                              (xbox_left + win_draw, ytop_draw + win_draw + ystart), (0, 0, 255), 6)
+                p1 = (xbox_left, ytop_draw + ystart)
+                p2 = (xbox_left + win_draw, ytop_draw + win_draw + ystart)
+                # cv2.rectangle(draw_img, p1, p2, (0, 0, 255), 6)
+                rectangles.append((p1, p2))
 
-    return draw_img
+
+    return rectangles
 
 
 
@@ -92,11 +104,15 @@ hist_bins = dist_pickle["hist_bins"]
 
 def do_it(img):
     ystart = 400
-    ystop = 656
+    ystop = 700
     scale = 1.5
+    # myplot.plot(img)
 
-    out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                        hist_bins)
+    rectangles = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                           hist_bins)
 
-    plt.imshow(out_img)
-    return out_img
+    return rectangles
+    # out_img = np.copy(img)
+    # out_img = detect_multiple.do_it(rectangles, out_img)
+    # # plt.imshow(out_img)
+    # return out_img

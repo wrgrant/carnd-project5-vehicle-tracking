@@ -25,9 +25,27 @@ def add_heat(heatmap, bbox_list):
 
 
 
+def add_heat_deque(heatmap, rectangle_deque):
+    # This iteration goes through elements in the deque
+    for list in rectangle_deque:
+
+        for box in list:
+            # Add += 1 for all pixels inside each bbox
+            # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+            heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    return heatmap
+
+
+
+
+
+
+
+
 def apply_threshold(heatmap, threshold):
     # Zero out pixels below the threshold
-    heatmap[heatmap <= threshold] = 0
+    heatmap[heatmap < threshold] = 0
     # Return thresholded map
     return heatmap
 
@@ -64,10 +82,12 @@ def do_it(box_list, image):
     heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 
     # Add heat to each box in box list
-    heat = add_heat(heat, box_list)
+    # heat = add_heat(heat, box_list)
+    heat = add_heat_deque(heat, box_list)
+    # print('num positive boxes: {}'.format(len(box_list)))
 
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 1)
+    heat = apply_threshold(heat, 2)
 
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
