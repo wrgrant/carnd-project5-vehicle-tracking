@@ -25,12 +25,13 @@ def process_images(in_img):
     # myplot.plot(img)
 
     return img
+    # return in_img
 
 
 
 
 def do_it(input, output):
-    clip = VideoFileClip(input).subclip(t_start=35)
+    clip = VideoFileClip(input).subclip(t_start=40)
     # clip = VideoFileClip(input).subclip(t_start=7)
     clip = clip.set_duration(10)
     clip = clip.fl_image(process_images)

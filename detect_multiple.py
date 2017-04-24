@@ -78,12 +78,15 @@ def draw_labeled_bboxes(img, labels):
 
 
 
-def do_it(box_list, image):
+def do_it(box_list, image, is_pipeline=True):
     heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 
     # Add heat to each box in box list
-    # heat = add_heat(heat, box_list)
-    heat = add_heat_deque(heat, box_list)
+    if is_pipeline:
+        heat = add_heat_deque(heat, box_list)
+    else:
+        heat = add_heat(heat, box_list)
+
     # print('num positive boxes: {}'.format(len(box_list)))
 
     # Apply threshold to help remove false positives

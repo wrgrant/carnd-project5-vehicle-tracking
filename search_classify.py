@@ -2,66 +2,10 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-from lesson_functions import *
+import lesson_functions
 import pickle
 import detect_multiple
-
-
-
-
-
-
-
-
-# Define a function to extract features from a single image window
-# This function is very similar to extract_features()
-# just for a single image rather than list of images
-def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
-                        hist_bins=32, orient=9,
-                        pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                        spatial_feat=True, hist_feat=True, hog_feat=True):
-    # 1) Define an empty list to receive features
-    img_features = []
-    # 2) Apply color conversion if other than 'RGB'
-    if color_space != 'RGB':
-        if color_space == 'HSV':
-            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        elif color_space == 'LUV':
-            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
-        elif color_space == 'HLS':
-            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-        elif color_space == 'YUV':
-            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2YUV)
-        elif color_space == 'YCrCb':
-            feature_image = cv2.cvtColor(img, cv2.COLOR_RGB2YCrCb)
-    else:
-        feature_image = np.copy(img)
-    # 3) Compute spatial features if flag is set
-    if spatial_feat == True:
-        spatial_features = bin_spatial(feature_image, size=spatial_size)
-        # 4) Append features to list
-        img_features.append(spatial_features)
-    # 5) Compute histogram features if flag is set
-    if hist_feat == True:
-        hist_features = color_hist(feature_image, nbins=hist_bins)
-        # 6) Append features to list
-        img_features.append(hist_features)
-    # 7) Compute HOG features if flag is set
-    if hog_feat == True:
-        if hog_channel == 'ALL':
-            hog_features = []
-            for channel in range(feature_image.shape[2]):
-                hog_features.extend(get_hog_features(feature_image[:, :, channel],
-                                                     orient, pix_per_cell, cell_per_block,
-                                                     vis=False, feature_vec=True))
-        else:
-            hog_features = get_hog_features(feature_image[:, :, hog_channel], orient,
-                                            pix_per_cell, cell_per_block, vis=False, feature_vec=True)
-        # 8) Append features to list
-        img_features.append(hog_features)
-
-    # 9) Return concatenated array of features
-    return np.concatenate(img_features)
+import myplot
 
 
 
@@ -85,12 +29,9 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
         # 3) Extract the test window from original image
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
         # 4) Extract features for that window using single_img_features()
-        features = single_img_features(test_img, color_space=color_space,
-                                       spatial_size=spatial_size, hist_bins=hist_bins,
-                                       orient=orient, pix_per_cell=pix_per_cell,
-                                       cell_per_block=cell_per_block,
-                                       hog_channel=hog_channel, spatial_feat=spatial_feat,
-                                       hist_feat=hist_feat, hog_feat=hog_feat)
+        features = lesson_functions.single_img_features(test_img, color_space, spatial_size, hist_bins,
+                                                        orient, pix_per_cell, cell_per_block,
+                                                        hog_channel, spatial_feat, hist_feat, hog_feat)
         # 5) Scale extracted features to be fed to classifier
         test_features = scaler.transform(np.array(features).reshape(1, -1))
         # 6) Predict using your classifier
@@ -98,8 +39,20 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
         # 7) If positive (prediction == 1) then save the window
         if prediction == 1:
             on_windows.append(window)
+
     # 8) Return windows for positive detections
     return on_windows
+
+
+
+
+def smart_img(img):
+    if np.max(img) <= 1:
+        # Just return it if we're already scaled correctly.
+        return img
+    else:
+        # If it's in 8-bit format, normalize to 0-1.
+        return img.astype(np.float32)/255
 
 
 
@@ -118,30 +71,32 @@ hist_feat = dist_pickle["hist_feat"]
 hog_feat = dist_pickle["hog_feat"]
 spatial_feat = dist_pickle["spatial_feat"]
 
-# TODO remove this after testing
-print('hello bear')
-
 
 
 
 
 def do_it(img):
-    # image = mpimg.imread('bbox-example-image.jpg')
-    draw_image = np.copy(img)
+    # This function automatically ensures the image is scaled correctly.
+    image = smart_img(img)
+    # myplot.plot(image)
 
-    # Uncomment the following line if you extracted training
-    # data from .png images (scaled 0 to 1 by mpimg) and the
-    # image you are searching is a .jpg (scaled 0 to 255)
-    image = img.astype(np.float32)/255
+    scale = 1
 
+    y_start_stop = [400, 650]
+    x_start_stop = [600, 1200]
 
-    scale = 1.5
+    windows1 = lesson_functions.slide_window(image, x_start_stop=x_start_stop, y_start_stop=y_start_stop,
+                           xy_window=(180, 120), xy_overlap=(0.8, 0.8))
 
-    y_start_stop = [500, 720]  # Min and max in y to search in slide_window()
-
-
-    windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop,
+    windows2 = lesson_functions.slide_window(image, x_start_stop=x_start_stop, y_start_stop=y_start_stop,
                            xy_window=(96, 96), xy_overlap=(0.5, 0.5))
+
+    # windows = windows1 + windows2
+    windows = windows1
+    # windows = windows2
+
+    raw_windows = lesson_functions.draw_boxes(image, windows, color=(0, 0, 1), thick=6)
+
 
     hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space,
                                  spatial_size=spatial_size, hist_bins=hist_bins,
@@ -150,14 +105,22 @@ def do_it(img):
                                  hog_channel=hog_channel, spatial_feat=spatial_feat,
                                  hist_feat=hist_feat, hog_feat=hog_feat)
 
-    detect_multiple.do_it(hot_windows, draw_image)
-
-    window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
 
 
-    # plt.imshow(window_img)
+
+    if False:
+        # This bit just plots every window and the resulting positive windows.
+        pos_windows = lesson_functions.draw_boxes(image, hot_windows, color=(0, 0, 1), thick=6)
+        myplot.plot_double(raw_windows, pos_windows)
+
+
+    # Do the heat-mapping stuff.
+    # draw_image = np.copy(img)
+    # draw_image = detect_multiple.do_it(hot_windows, draw_image)
+    # plt.imshow(draw_image)
     # plt.show()
 
-    return window_img
+
+    return hot_windows
 
 
