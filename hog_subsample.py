@@ -6,16 +6,31 @@ import cv2
 from lesson_functions import *
 import detect_multiple
 import myplot
+import lesson_functions
+import averager
+
+
+
+
+
+dist_pickle = pickle.load(open("svc_pickle.p", "rb"))
+svc = dist_pickle["svc"]
+X_scaler = dist_pickle["scaler"]
+orient = dist_pickle["orient"]
+pix_per_cell = dist_pickle["pix_per_cell"]
+cell_per_block = dist_pickle["cell_per_block"]
+spatial_size = dist_pickle["spatial_size"]
+hist_bins = dist_pickle["hist_bins"]
+
+
 
 
 
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
-def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
-    # draw_img = np.copy(img)
-    img = img.astype(np.float32) / 255
+def find_cars(img, ystart, ystop, xstart, xstop, scale):
 
-    img_tosearch = img[ystart:ystop, :, :]
+    img_tosearch = img[ystart:ystop, xstart:xstop, :]
     ctrans_tosearch = convert_color(img_tosearch, conv='RGB2YCrCb')
     if scale != 1:
         imshape = ctrans_tosearch.shape
@@ -84,34 +99,38 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 # cv2.rectangle(draw_img, p1, p2, (0, 0, 255), 6)
                 rectangles.append((p1, p2))
 
-
     return rectangles
 
 
 
 
-dist_pickle = pickle.load(open("svc_pickle.p", "rb"))
-svc = dist_pickle["svc"]
-X_scaler = dist_pickle["scaler"]
-orient = dist_pickle["orient"]
-pix_per_cell = dist_pickle["pix_per_cell"]
-cell_per_block = dist_pickle["cell_per_block"]
-spatial_size = dist_pickle["spatial_size"]
-hist_bins = dist_pickle["hist_bins"]
+def do_it(in_img, prl_context):
+    # load_values()
+    scaled_img = util.smart_img(in_img)
 
-
-
-
-def do_it(img):
     ystart = 400
     ystop = 700
-    scale = 1.5
-    # myplot.plot(img)
 
-    rectangles = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                           hist_bins)
+    xstart = 400
+    xstop = 1280
 
-    return rectangles
+    # scales = [1, 1.3, 1.5, 1.7, 2]
+    scales = [1, 1.3, 1.5]
+
+    hot_windows = prl_context(delayed(find_cars) (scaled_img, ystart, ystop, xstart, xstop, scale) for scale in scales)
+
+    averaged_windows = averager.do_it(hot_windows)
+
+    if False:
+        # This bit just plots every window and the resulting positive windows.
+        pos_windows = lesson_functions.draw_boxes(img, averaged_windows, color=(0, 0, 1), thick=6)
+        myplot.plot(pos_windows)
+
+
+    out_img = np.copy(in_img)
+    out_img = detect_multiple.do_it(averaged_windows, out_img)
+
+    return out_img
     # out_img = np.copy(img)
     # out_img = detect_multiple.do_it(rectangles, out_img)
     # # plt.imshow(out_img)

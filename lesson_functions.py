@@ -60,6 +60,40 @@ def color_hist(img, nbins=32, bins_range=(0, 256)):
 
 
 
+# Define a function to extract features from a list of images
+# Have this function call bin_spatial() and color_hist()
+def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
+                     hist_bins=32, orient=9,
+                     pix_per_cell=8, cell_per_block=2, hog_channel=0,
+                     spatial_feat=True, hist_feat=True, hog_feat=True):
+    # Create a list to append feature vectors to
+    # features = []
+    # Iterate through the list of images
+
+    features = Parallel(n_jobs=8) (delayed(analyze_img) (file, color_space, spatial_size,
+                                                         hist_bins, orient, pix_per_cell,
+                                                         cell_per_block, hog_channel,
+                                                         spatial_feat, hist_feat, hog_feat) for file in imgs)
+
+    return features
+
+
+
+
+def analyze_img(file, color_space, spatial_size, hist_bins, orient, pix_per_cell, cell_per_block, hog_channel,
+                spatial_feat, hist_feat, hog_feat):
+
+    image = mpimg.imread(file)
+    # Auto-normalize image.
+    image = util.smart_img(image)
+
+    return single_img_features(image, color_space, spatial_size, hist_bins, orient,
+                               pix_per_cell, cell_per_block, hog_channel,
+                               spatial_feat, hist_feat, hog_feat)
+
+
+
+
 # Define a function to extract features from a single image window.
 def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
                         hist_bins=32, orient=9, pix_per_cell=8,
@@ -111,41 +145,6 @@ def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
 
 
 
-
-# Define a function to extract features from a list of images
-# Have this function call bin_spatial() and color_hist()
-def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
-                     hist_bins=32, orient=9,
-                     pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                     spatial_feat=True, hist_feat=True, hog_feat=True):
-    # Create a list to append feature vectors to
-    # features = []
-    # Iterate through the list of images
-
-    features = Parallel(n_jobs=8) (delayed(analyze_img) (file, color_space, spatial_size,
-                                                         hist_bins, orient, pix_per_cell,
-                                                         cell_per_block, hog_channel,
-                                                         spatial_feat, hist_feat, hog_feat) for file in imgs)
-
-    return features
-
-
-
-
-def analyze_img(file, color_space, spatial_size, hist_bins, orient, pix_per_cell, cell_per_block, hog_channel,
-                spatial_feat, hist_feat, hog_feat):
-
-    image = mpimg.imread(file)
-    # Auto-normalize image.
-    image = util.smart_img(image)
-
-    return single_img_features(image, color_space, spatial_size, hist_bins, orient,
-                               pix_per_cell, cell_per_block, hog_channel,
-                               spatial_feat, hist_feat, hog_feat)
-
-
-
-
 # Define a function to return HOG features and visualization
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, feature_vec=True):
     # Call with two outputs if vis==True
@@ -164,6 +163,9 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, featu
                        transform_sqrt=True,
                        visualise=vis, feature_vector=feature_vec)
         return features
+
+
+
 
 
 
@@ -222,11 +224,11 @@ def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
 
 
 # Define a function to draw bounding boxes
-def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
+def draw_boxes(img, bboxes_list, color=(0, 0, 255), thick=6):
     # Make a copy of the image
     imcopy = np.copy(img)
     # Iterate through the bounding boxes
-    for bbox in bboxes:
+    for bbox in bboxes_list:
         # Draw a rectangle given bbox coordinates
         cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
     # Return the image copy with boxes drawn

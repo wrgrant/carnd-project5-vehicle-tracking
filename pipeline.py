@@ -5,6 +5,12 @@ import hog_subsample
 import pprofile
 import matplotlib.image as mpimg
 import averager
+from joblib import Parallel
+
+
+
+
+prl_context = None
 
 
 
@@ -19,9 +25,9 @@ def save_frame_at_time(time):
 
 
 def process_images(in_img):
-    # rectangles = search_classify.do_it(in_img)
-    rectangles = hog_subsample.do_it(in_img)
-    img = averager.do_it(in_img, rectangles)
+    img = search_classify.do_it(in_img, prl_context)
+    # img = hog_subsample.do_it(in_img, prl_context)
+
     # myplot.plot(img)
 
     return img
@@ -31,9 +37,9 @@ def process_images(in_img):
 
 
 def do_it(input, output):
-    clip = VideoFileClip(input).subclip(t_start=20)
+    clip = VideoFileClip(input).subclip(t_start=10)
     # clip = VideoFileClip(input).subclip(t_start=7)
-    clip = clip.set_duration(15)
+    # clip = clip.set_duration(2)
     clip = clip.fl_image(process_images)
     clip.write_videofile(output, progress_bar=True, audio=False)
 
@@ -44,5 +50,6 @@ if __name__ == '__main__':
     # save_frame_at_time(35)
     # prof = pprofile.Profile()
     # with prof():
-    do_it(input='project_corrected.mp4', output='./temp_output/project_test.mp4')
+    with Parallel(n_jobs=1, backend='multiprocessing') as prl_context:
+        do_it(input='project_corrected.mp4', output='./temp_output/project_test.mp4')
     # prof.callgrind(open('latest.out', 'w'))
