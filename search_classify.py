@@ -11,7 +11,6 @@ import averager
 from joblib import delayed
 
 
-
 prl_context = None
 
 
@@ -31,6 +30,7 @@ spatial_feat = dist_pickle["spatial_feat"]
 
 
 
+
 def search_window(img, window):
         # 3) Extract the test window from original image
         test_img = cv2.resize(img[window[0][1]:window[1][1], window[0][0]:window[1][0]], (64, 64))
@@ -47,6 +47,7 @@ def search_window(img, window):
         # myplot.plot(test_img, '{}'.format(prediction))
         if prediction == 1:
             return window
+
 
 
 
@@ -71,36 +72,35 @@ def search_windows(img, windows):
 
 
 
+
 def do_it(in_img, prl):
     global prl_context
     prl_context = prl
 
     # This function automatically ensures the image is scaled correctly.
     scaled_img = util.smart_img(in_img)
-    # myplot.plot(image)
 
-
+    # Define two different window sizes and search areas. First list of windows are large and search very bottom
+    # of image for close cars.
     windows1 = lesson_functions.slide_window(scaled_img, x_start_stop=[600, 1280], y_start_stop=[400, 700],
-                           xy_window=(150, 200), xy_overlap=(0.8, 0.8))
-
+                           xy_window=(280, 200), xy_overlap=(0.8, 0.8))
+    # Second list is smaller windows and
     windows2 = lesson_functions.slide_window(scaled_img, x_start_stop=[700, 1200], y_start_stop=[400, 550],
                            xy_window=(180, 100), xy_overlap=(0.9, 0.9))
 
+    # Combine the windows into one large list.
     windows = windows1 + windows2
     # windows = windows1
     # windows = windows2
 
+    # Find the 'hot' windows.
     hot_windows = search_windows(scaled_img, windows)
+
+    # Send list of windows into code which keeps a circular buffer of the last 10 hot_windows results to smooth data.
     averaged_windows_deque = averager.do_search(hot_windows)
 
-
-
-
-
-
-
-    if False:
-        # This bit just plots every window and the resulting positive windows.
+    # Visualization for debugging. This bit just plots every window and the resulting positive windows.
+    if True:
         raw_windows = lesson_functions.draw_boxes(scaled_img, windows, color=(0, 0, 1), thick=6)
 
         # Make a straight list of windows so draw_boxes() can plot it.
@@ -113,16 +113,8 @@ def do_it(in_img, prl):
         myplot.plot_double(raw_windows, pos_windows)
 
 
-    # Do the heat-mapping stuff.
-    # draw_image = np.copy(in_img)
-    # draw_image = detect_multiple.do_it(hot_windows, draw_image)
-    # plt.imshow(draw_image)
-    # plt.show()
-
-
+    # Do the heat-mapping.
     out_img = np.copy(in_img)
     out_img = detect_multiple.do_it(averaged_windows_deque, out_img)
 
     return out_img
-
-

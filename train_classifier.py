@@ -15,7 +15,7 @@ from timer import *
 
 
 
-def train_classifier():
+def train():
     # images = glob.glob('./images/**/*.png', recursive=True)
 
     cars = glob.glob('./images/vehicles/KITTI*/*.png')
@@ -43,7 +43,6 @@ def train_classifier():
 
     orient = 9  # HOG orientations
     pix_per_cell = 8  # HOG pixels per cell
-    # cell_per_block = 8  # HOG cells per block
     cell_per_block = 2  # HOG cells per block
     hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
 
@@ -121,4 +120,4 @@ def train_classifier():
 
 
 if __name__ == '__main__':
-    train_classifier()
+    train()
