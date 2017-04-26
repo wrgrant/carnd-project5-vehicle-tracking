@@ -6,6 +6,7 @@ import lesson_functions
 import pickle
 import detect_multiple
 import myplot
+import util
 
 
 
@@ -46,13 +47,6 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
 
 
 
-def smart_img(img):
-    if np.max(img) <= 1:
-        # Just return it if we're already scaled correctly.
-        return img
-    else:
-        # If it's in 8-bit format, normalize to 0-1.
-        return img.astype(np.float32)/255
 
 
 
@@ -77,22 +71,22 @@ spatial_feat = dist_pickle["spatial_feat"]
 
 def do_it(img):
     # This function automatically ensures the image is scaled correctly.
-    image = smart_img(img)
+    image = util.smart_img(img)
     # myplot.plot(image)
 
     scale = 1
 
-    y_start_stop = [400, 650]
-    x_start_stop = [600, 1200]
+    y_start_stop = [400, 700]
+    x_start_stop = [600, 1300]
 
     windows1 = lesson_functions.slide_window(image, x_start_stop=x_start_stop, y_start_stop=y_start_stop,
-                           xy_window=(180, 120), xy_overlap=(0.8, 0.8))
+                           xy_window=(200, 200), xy_overlap=(0.5, 0.7))
 
-    windows2 = lesson_functions.slide_window(image, x_start_stop=x_start_stop, y_start_stop=y_start_stop,
-                           xy_window=(96, 96), xy_overlap=(0.5, 0.5))
+    windows2 = lesson_functions.slide_window(image, x_start_stop=[600, 1200], y_start_stop=[400, 550],
+                           xy_window=(120, 100), xy_overlap=(0.6, 0.7))
 
-    # windows = windows1 + windows2
-    windows = windows1
+    windows = windows1 + windows2
+    # windows = windows1
     # windows = windows2
 
     raw_windows = lesson_functions.draw_boxes(image, windows, color=(0, 0, 1), thick=6)

@@ -2,6 +2,8 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 from skimage.feature import hog
+from joblib import Parallel, delayed
+import util
 
 
 
@@ -117,20 +119,29 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
                      pix_per_cell=8, cell_per_block=2, hog_channel=0,
                      spatial_feat=True, hist_feat=True, hog_feat=True):
     # Create a list to append feature vectors to
-    features = []
+    # features = []
     # Iterate through the list of images
-    for file in imgs:
-        file_features = []
-        # Read in each one by one
-        image = mpimg.imread(file)
 
-        img_feats = single_img_features(image, color_space, spatial_size, hist_bins, orient,
-                                        pix_per_cell, cell_per_block, hog_channel,
-                                        spatial_feat, hist_feat, hog_feat)
+    features = Parallel(n_jobs=8) (delayed(analyze_img) (file, color_space, spatial_size,
+                                                         hist_bins, orient, pix_per_cell,
+                                                         cell_per_block, hog_channel,
+                                                         spatial_feat, hist_feat, hog_feat) for file in imgs)
 
-        features.append(img_feats)
     return features
 
+
+
+
+def analyze_img(file, color_space, spatial_size, hist_bins, orient, pix_per_cell, cell_per_block, hog_channel,
+                spatial_feat, hist_feat, hog_feat):
+
+    image = mpimg.imread(file)
+    # Auto-normalize image.
+    image = util.smart_img(image)
+
+    return single_img_features(image, color_space, spatial_size, hist_bins, orient,
+                               pix_per_cell, cell_per_block, hog_channel,
+                               spatial_feat, hist_feat, hog_feat)
 
 
 

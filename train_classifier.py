@@ -4,53 +4,71 @@ from lesson_functions import *
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from skimage.feature import hog
 import pickle
+# import search_classify
+from timer import *
+# import pipeline
+
 
 
 
 
 def train_classifier():
-    images = glob.glob('./images/**/*.png', recursive=True)
-    cars = []
-    notcars = []
-    for image in images:
-        if 'non-vehicles' in image:
-            notcars.append(image)
-        else:
-            cars.append(image)
+    # images = glob.glob('./images/**/*.png', recursive=True)
+
+    cars = glob.glob('./images/vehicles/KITTI*/*.png')
+    newcars = glob.glob('./images/vid extracts/*.png')
+    notcars = glob.glob('./images/non-vehicles/**/*.png')
+
+    cars = shuffle(cars)
+    notcars = shuffle(notcars)
+    # newcars = shuffle(newcars)
+
 
     # Use equal car and not car.
     # sample_size = min(len(cars), len(notcars))
-    # cars = cars[0:sample_size]
-    # notcars = notcars[0:sample_size]
 
-    ### TODO: Tweak these parameters and see how the results change.
+    sample_size = 20
+    cars = cars[0:sample_size]
+    notcars = notcars[0:sample_size]
+
+    cars = cars + newcars
+
+
+
     color_space = 'YCrCb'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+    # HLS good except shadow, YCrCb good both but not as good no shadow
+
     orient = 9  # HOG orientations
     pix_per_cell = 8  # HOG pixels per cell
+    # cell_per_block = 8  # HOG cells per block
     cell_per_block = 2  # HOG cells per block
     hog_channel = "ALL"  # Can be 0, 1, 2, or "ALL"
-    spatial_size = (32, 32)  # Spatial binning dimensions
-    hist_bins = 16  # Number of histogram bins
-    spatial_feat = True  # Spatial features on or off
-    hist_feat = True  # Histogram features on or off
-    hog_feat = True  # HOG features on or off
 
+    spatial_size = (64, 64)  # Spatial binning dimensions
+    hist_bins = 128  # Number of histogram bins
 
+    spatial_feat = False  # Spatial features on or off
+    hist_feat = False  # Histogram features on or off
+    hog_feat = True # HOG features on or off
+
+    tic()
     car_features = extract_features(cars, color_space=color_space,
                                     spatial_size=spatial_size, hist_bins=hist_bins,
                                     orient=orient, pix_per_cell=pix_per_cell,
                                     cell_per_block=cell_per_block,
                                     hog_channel=hog_channel, spatial_feat=spatial_feat,
                                     hist_feat=hist_feat, hog_feat=hog_feat)
+    toc()
     notcar_features = extract_features(notcars, color_space=color_space,
                                        spatial_size=spatial_size, hist_bins=hist_bins,
                                        orient=orient, pix_per_cell=pix_per_cell,
                                        cell_per_block=cell_per_block,
                                        hog_channel=hog_channel, spatial_feat=spatial_feat,
                                        hist_feat=hist_feat, hog_feat=hog_feat)
-
+    toc()
     X = np.vstack((car_features, notcar_features)).astype(np.float64)
     # Fit a per-column scaler
     X_scaler = StandardScaler().fit(X)
@@ -90,6 +108,10 @@ def train_classifier():
 
     pickle.dump(outs, open("svc_pickle.p", "wb"))
 
+    # pipeline.do_it(input='project_corrected.mp4', output='./temp_output/project_test.mp4')
+    # img = mpimg.imread('test.png')
+    # img = img[:, :, 0:3]
+    # search_classify.do_it(img)
 
 
 
@@ -97,4 +119,6 @@ def train_classifier():
 
 
 
-train_classifier()
+
+if __name__ == '__main__':
+    train_classifier()
