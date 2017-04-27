@@ -15,8 +15,8 @@ def smart_img(img):
 
 
 
-def resize_images():
-    newcars = glob.glob('./images/vid extracts/*')
+def resize_captured_images():
+    newcars = glob.glob('./images/vid extracts/originals/*')
 
     counter = 1
 

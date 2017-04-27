@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import cv2
 from scipy.ndimage.measurements import label
+import myplot
 
 
 
@@ -21,37 +22,12 @@ def add_heat(heatmap, bbox_list):
 
 
 
-
-
-
-
-def add_heat_deque(heatmap, rectangle_deque):
-    # This iteration goes through elements in the deque
-    for list in rectangle_deque:
-
-        for box in list:
-            # Add += 1 for all pixels inside each bbox
-            # Assuming each "box" takes the form ((x1, y1), (x2, y2))
-            heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
-
-    return heatmap
-
-
-
-
-
-
-
-
 def apply_threshold(heatmap, threshold):
+    # heatmap_out = np.copy(heatmap)
     # Zero out pixels below the threshold
     heatmap[heatmap < threshold] = 0
     # Return thresholded map
     return heatmap
-
-
-
-
 
 
 
@@ -74,30 +50,35 @@ def draw_labeled_bboxes(img, labels):
 
 
 
+heat = None
 
 
+def do_it(box_list, image):
+    global heat
+    # Going to keep 'heat' as a module variable so I can keep it in scope across multiple
+    # calls to this function.
+    if heat is None:
+        heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 
-
-def do_it(box_list, image, is_pipeline=True):
-    heat = np.zeros_like(image[:, :, 0]).astype(np.float)
+    threshold = 4
 
     # Add heat to each box in box list
-    if is_pipeline:
-        heat = add_heat_deque(heat, box_list)
-    else:
-        heat = add_heat(heat, box_list)
-
-    # print('num positive boxes: {}'.format(len(box_list)))
+    heat = add_heat(heat, box_list)
 
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 2)
+    heat_thresh = apply_threshold(heat, threshold)
 
     # Visualize the heatmap when displaying
-    heatmap = np.clip(heat, 0, 255)
+    heatmap = np.clip(heat_thresh, 0, 255)
 
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
     draw_img = draw_labeled_bboxes(np.copy(image), labels)
+
+    # Decay the values in heat a bit.
+    heat *= 0.3
+    # And ensure no values go below 0.
+    heat = np.clip(heat, 0, 255)
 
     if False:
         fig = plt.figure()
