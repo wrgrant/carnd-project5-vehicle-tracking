@@ -12,25 +12,15 @@ The goals / steps of this project are the following:
 <br>
 
 
-[//]: # (Image References)
-[image1]: ./project%20example%20repo/examples/car_not_car.png
-[image2]: ./project%20example%20repo/examples/HOG_example.jpg
-[image3]: ./project%20example%20repo/examples/sliding_windows.jpg
-[image4]: ./project%20example%20repo/examples/sliding_window.jpg
-[image5]: ./project%20example%20repo/examples/bboxes_and_heat.png
-[image6]: ./project%20example%20repo/examples/labels_map.png
-[image7]: ./project%20example%20repo/examples/output_bboxes.png
-
-
 
 
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 
 
-###Histogram of Oriented Gradients (HOG)
+### Histogram of Oriented Gradients (HOG)
 
-####1. Explain how (and identify where in your code) you extracted HOG features from the training images.
+#### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
 
 I have a single function that extracts features from images at various points in my workflow. That code lives in the `lesson_functions.py` module. See line 149 `get_hog_features()`.
 
@@ -40,7 +30,7 @@ I then extract the features for cars and non-cars separately. I modified the cod
 
 Here is a picture showing examples of the difference between car and non-cars. 
 
-![](./project%20example%20repo/examples/car_not_car.png)
+![](./output_images/car_not_car.png)
 
 Here are some images showing the hog features visualizations from the Y, Cr, and Cb channels from a typical car image.
 
@@ -55,13 +45,13 @@ I then explored different color spaces and different hog parameters (`orientatio
 
 
 
-####2. Explain how you settled on your final choice of HOG parameters.
+#### 2. Explain how you settled on your final choice of HOG parameters.
 
 I tried various combinations of parameters but found that staying with the given values for `orient`, `pix_per_cell`, and `cell_per_block` resulted in the best performance of finding the cars. I did have to change the `color_space` though, as the default of `RGB` resulted in terrible performance for me--false positives all over the screen and very inconsistent performance on the cars.
 
 I tried every color space option and ended up finding that the `YCrCb` color space gave best results overall. Actually, `HLS` was the best in the full sunlight portions of the video, but it does poorly in the frames where the cars are in shadows. `YCrCb` was not as great in full sunlight, but was more consistent in shadows. So when I added frame averaging and heat-mapping, `YCrCb` ended up being the best choice for consistent performance.
 
-####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features.
+#### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features.
 
 I ended up not using the histogram or raw color features as they did not help car identification. See `train_classifier.py` lines 71-94 for the training pipeline.
 
@@ -74,9 +64,9 @@ The output of this function is a pickled dictionary which contains the exact par
 
 
 
-###Sliding Window Search
+### Sliding Window Search
 
-####1. Describe how (and identify where in your code) you implemented a sliding window search.
+#### 1. Describe how (and identify where in your code) you implemented a sliding window search.
 
 For this project I decided to program the window searching to the video. I did this for the sake of time, as searching many windows takes a long time to run. See the module `search_classify.py` lines 75-110. 
 
@@ -91,7 +81,7 @@ Here is an image showing the window search regions. I search a smaller region wi
 
 
 
-####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
+#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
 Ultimately I searched on two scales using YCrCb 3-channel HOG features. Using time-averaging and heat-mapping I was able to get a smooth result and also reduce spurious noise (false-positives) that only show up in single frames. Here are some example images:
 
@@ -102,11 +92,11 @@ Ultimately I searched on two scales using YCrCb 3-channel HOG features. Using ti
 
 ### Video Implementation
 
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
+#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 Here is a [link to my video result](./output_images/pipeline_output.mp4)
 
 
-####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
+#### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
 I accomplished time averaging by holding the `heat` matrix in memory between iterations to `detect_multiple.do_it()` (line 81). For each call to the function, I added some 'heat' for each incoming detected box. Then I thresholded such that only recently highly detected boxes made the cut, and all other pixels of the heatmap were set to 0.
 
@@ -130,9 +120,9 @@ Here's an example result showing the heatmap from a series of frames of video. T
 
 ---
 
-###Discussion
+### Discussion
 
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 My biggest problem was in tuning my pipeline to run reasonably fast enough while still searching over enough windows to get good signal-to-noise for positive window activation. If I search over a very fine grid, then I get lots of positive results which make for a very distinct heatmap and good boundary results. But this comes at the tradeoff of speed. When the calculations are very slow, it is extremely difficult to tune the averaging pipeline. 
 
