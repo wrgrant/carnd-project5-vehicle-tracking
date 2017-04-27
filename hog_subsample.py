@@ -119,16 +119,22 @@ def do_it(in_img, prl_context):
 
     hot_windows = prl_context(delayed(find_cars) (scaled_img, ystart, ystop, xstart, xstop, scale) for scale in scales)
 
-    averaged_windows = averager.do_it(hot_windows)
+    # Turn the list of lists into a single list
+    windows = []
+    for iteration in hot_windows:
+        for box in iteration:
+            windows.append(box)
+
+    hot_windows = windows
 
     if False:
         # This bit just plots every window and the resulting positive windows.
-        pos_windows = lesson_functions.draw_boxes(img, averaged_windows, color=(0, 0, 1), thick=6)
+        pos_windows = lesson_functions.draw_boxes(scaled_img, hot_windows, color=(0, 0, 1), thick=6)
         myplot.plot(pos_windows)
 
 
     out_img = np.copy(in_img)
-    out_img = detect_multiple.do_it(averaged_windows, out_img)
+    out_img = detect_multiple.do_it(hot_windows, out_img)
 
     return out_img
     # out_img = np.copy(img)
