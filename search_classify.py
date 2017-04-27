@@ -72,10 +72,6 @@ def search_windows(img, windows):
 
 
 
-
-
-
-
 def do_it(in_img, prl):
     global prl_context
     prl_context = prl

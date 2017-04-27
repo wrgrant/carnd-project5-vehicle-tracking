@@ -26,20 +26,14 @@ def save_frame_at_time(time):
 
 def process_images(in_img):
     img = search_classify.do_it(in_img, prl_context)
-    # img = hog_subsample.do_it(in_img, prl_context)
-
-    # myplot.plot(img)
-
     return img
-    # return in_img
 
 
 
 
 def do_it(input, output):
-    clip = VideoFileClip(input).subclip(t_start=10)
-    # clip = VideoFileClip(input).subclip(t_start=7)
-    # clip = clip.set_duration(2)
+    clip = VideoFileClip(input).subclip(t_start=0)
+    # clip = clip.set_duration(20)
     clip = clip.fl_image(process_images)
     clip.write_videofile(output, progress_bar=True, audio=False)
 

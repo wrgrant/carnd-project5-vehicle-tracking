@@ -40,6 +40,20 @@ def plot_double(img1, img2, title1='', title2=''):
     plt.show()
 
 
+def plot_triple(img1, img2, img3, title1='', title2='', title3 = '', cmap1='gray', cmap2='gray', cmap3='gray'):
+    font_size = 15
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5))
+    f.tight_layout()
+    ax1.imshow(img1, cmap1)
+    ax1.set_title(title1, fontsize=font_size)
+    ax2.imshow(img2, cmap2)
+    ax2.set_title(title2, fontsize=font_size)
+    ax3.imshow(img3, cmap3)
+    ax3.set_title(title3, fontsize=font_size)
+    # plt.subplots_adjust(left=0., right=1, top=0.9, bottom=0.)
+    plt.show()
+
+
 def plot(img, title='', is_block=True):
     plt.imshow(img)
     plt.title(title)

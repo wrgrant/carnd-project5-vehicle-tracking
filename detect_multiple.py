@@ -5,6 +5,7 @@ import pickle
 import cv2
 from scipy.ndimage.measurements import label
 import myplot
+import lesson_functions
 
 
 
@@ -18,16 +19,6 @@ def add_heat(heatmap, bbox_list):
 
     # Return updated heatmap
     return heatmap  # Iterate through list of bboxes
-
-
-
-
-def apply_threshold(heatmap, threshold):
-    # heatmap_out = np.copy(heatmap)
-    # Zero out pixels below the threshold
-    heatmap[heatmap < threshold] = 0
-    # Return thresholded map
-    return heatmap
 
 
 
@@ -60,35 +51,34 @@ def do_it(box_list, image):
     if heat is None:
         heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 
-    threshold = 4
+    # Threshold below which contribution will not be counted for boundary
+    # box drawing.
+    label_threshold = 4
+    # Threshold below which pixels will be set to 0
+    heat_threshold = 2
 
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
 
     # Apply threshold to help remove false positives
-    heat_thresh = apply_threshold(heat, threshold)
-
-    # Visualize the heatmap when displaying
-    heatmap = np.clip(heat_thresh, 0, 255)
+    heat_thresholded = np.copy(heat)
+    heat_thresholded[heat < label_threshold] = 0
 
     # Find final boxes from heatmap using label function
-    labels = label(heatmap)
-    draw_img = draw_labeled_bboxes(np.copy(image), labels)
+    labels = label(np.clip(heat_thresholded, 0, 255))
+    labeled_boxes_img = draw_labeled_bboxes(np.copy(image), labels)
+    raw_boxes_img = lesson_functions.draw_boxes(np.copy(image), box_list)
 
-    # Decay the values in heat a bit.
-    heat *= 0.3
-    # And ensure no values go below 0.
-    heat = np.clip(heat, 0, 255)
 
     if False:
-        fig = plt.figure()
-        plt.subplot(121)
-        plt.imshow(draw_img)
-        plt.title('Car Positions')
-        plt.subplot(122)
-        plt.imshow(heatmap, cmap='hot')
-        plt.title('Heat Map')
-        fig.tight_layout()
-        plt.show()
+        myplot.plot_triple(raw_boxes_img, heat, labeled_boxes_img, 'Incoming hot windows', 'Heatmap', 'Result boundaries', cmap2='hot')
 
-    return draw_img
+
+    # Decay the values in heat a bit.
+    heat *= 0.6
+    # And ensure no values go below 0.
+    heat = np.clip(heat, 0, 255)
+    # Kill off any residuals.
+    heat[heat < heat_threshold] = 0
+
+    return labeled_boxes_img
